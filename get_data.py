@@ -10,11 +10,12 @@ workbook = Workbook()
 sheet = workbook.active
 
 # Set the header row
-header = ['Поставщик', 'Покупатель', 'Итого', 'date']
+header = ['Поставщик', 'Покупатель', 'услуг', 'Итого', 'date']
 sheet.append(header)
 sheet.column_dimensions['A'].width = 60
 sheet.column_dimensions['B'].width = 60
-sheet.column_dimensions['C'].width = 20
+sheet.column_dimensions['C'].width = 60
+sheet.column_dimensions['D'].width = 20
 sheet.column_dimensions['D'].width = 20
 
 # Directory containing your invoice files
@@ -36,7 +37,9 @@ for filename in os.listdir(directory):
                 if len(pdf_reader.pages) > 1:
                     text += pdf_reader.pages[1].extract_text()
 
- 
+                # print(text)
+                # print('/'*88)
+
                 commission_agent_match = re.search(r'Поставщик:\s*(.*)', text)
                 commission_agent = commission_agent_match.group(
                     1) if commission_agent_match else None
@@ -48,6 +51,11 @@ for filename in os.listdir(directory):
                 # Find the "Покупатель" data
                 buyer_match = re.search(r'Покупатель:\s*(.*)', text)
                 buyer = buyer_match.group(1) if buyer_match else None
+
+                service = re.search(
+                    r'Оказание услуг\n([\s\S]+?)\nуслуга \(сум\)', text)
+                text_service = service.group(1).split(
+                    "\n")[-1] if service else None
 
                 # Find the "Итого" data
                 total_match = re.search(r'Всего к оплате:\s*(.*)', text)
@@ -63,17 +71,18 @@ for filename in os.listdir(directory):
                 date = date_match.group(0).split(
                     ' ')[0] if date_match else None
 
-                if buyer is not None and commission_agent is not None and total is not None and date_match is not None:
-                    sheet.append([commission_agent, buyer,
+                if buyer is not None and commission_agent is not None and total is not None and date_match is not None and text_service is not None:
+                    sheet.append([commission_agent, buyer, text_service,
                                   extractor.replace_groups(total), date])
                     file.close()
                     os.remove(file_path)
 
                 else:
                     file.close()
-                
+
                 print("Поставщик:", commission_agent)
                 print("Покупатель:", buyer)
+                print("услуг:", text_service)
                 print("Итого:", extractor.replace_groups(total))
                 print("Date:", date)
                 print('-'*88)
