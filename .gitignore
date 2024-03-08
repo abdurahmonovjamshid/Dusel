@@ -69,6 +69,8 @@ wheels/
 *.egg 
 *.manifest 
 *.spec 
+*.pdf
+*.xlsx
 
 # Installer logs 
 pip-log.txt 
