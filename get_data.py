@@ -40,10 +40,14 @@ for filename in os.listdir(directory):
                 # print(text)
                 # print('/'*88)
 
-                commission_agent_match = re.search(
-                    r'(Поставщик:|Комиссионер:)\s*(.*)', text)
+                commission_agent_match = re.search(r'Поставщик:\s*(.*)', text)
                 commission_agent = commission_agent_match.group(
                     1) if commission_agent_match else None
+                
+                if commission_agent is None:
+                    commission_agent = re.search(r'Комиссионер:\s*(.*)', text)
+                    commission_agent = commission_agent.group(
+                        1) if buyer_match else None
 
                 # Find the "Покупатель" data
                 buyer_match = re.search(r'Покупатель:\s*(.*)', text)
