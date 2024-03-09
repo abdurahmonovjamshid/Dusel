@@ -4,6 +4,10 @@ from openpyxl import Workbook
 import re
 from words2numsrus.extractor import NumberExtractor
 import traceback
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Alignment
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.worksheet.table import Table, TableStyleInfo
 extractor = NumberExtractor()
 # Create an Excel workbook
 workbook = Workbook()
@@ -12,11 +16,7 @@ sheet = workbook.active
 # Set the header row
 header = ['Поставщик', 'Покупатель', 'услуг', 'Итого', 'date']
 sheet.append(header)
-sheet.column_dimensions['A'].width = 60
-sheet.column_dimensions['B'].width = 60
-sheet.column_dimensions['C'].width = 60
-sheet.column_dimensions['D'].width = 20
-sheet.column_dimensions['D'].width = 20
+
 
 # Directory containing your invoice files
 directory = 'C:/Users/acer/OneDrive/Desktop/Dusel-Projects'
@@ -43,7 +43,7 @@ for filename in os.listdir(directory):
                 commission_agent_match = re.search(r'Поставщик:\s*(.*)', text)
                 commission_agent = commission_agent_match.group(
                     1) if commission_agent_match else None
-                
+
                 if commission_agent is None:
                     commission_agent = re.search(r'Комиссионер:\s*(.*)', text)
                     commission_agent = commission_agent.group(
@@ -96,5 +96,23 @@ for filename in os.listdir(directory):
                 print(e)
                 traceback.print_exc()
 
+for column in sheet.columns:
+    max_length = 0
+    column_letter = column[0].column_letter
+    for cell in column:
+        try:
+            if len(str(cell.value)) > max_length:
+                max_length = len(cell.value)
+        except:
+            pass
+    adjusted_width = (max_length + 2) * 1.2
+    sheet.column_dimensions[column_letter].width = adjusted_width
+
+data_range = sheet[2:sheet.max_row]
+sorted_rows = sorted(data_range, key=lambda x: x[0].value)
+sheet.delete_rows(2, sheet.max_row)
+
+for row in sorted_rows:
+    sheet.append([cell.value for cell in row])
 
 workbook.save('C:/Users/acer/OneDrive/Desktop/Dusel-Projects/file.xlsx')
