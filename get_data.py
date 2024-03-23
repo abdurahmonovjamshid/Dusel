@@ -13,11 +13,6 @@ extractor = NumberExtractor()
 workbook = Workbook()
 sheet = workbook.active
 
-# Set the header row
-header = ['Поставщик', 'Покупатель', 'услуг', 'Итого', 'date']
-sheet.append(header)
-
-
 # Directory containing your invoice files
 directory = 'C:/Users/acer/OneDrive/Desktop/Dusel-Projects'
 
@@ -84,8 +79,19 @@ for filename in os.listdir(directory):
                     ' ')[0] if date_match else None
 
                 if buyer is not None and commission_agent is not None and total is not None and date_match is not None and text_service is not None:
-                    sheet.append([commission_agent, buyer,
-                                 text_service, total, date])
+
+                    clean_buyer = re.findall(r'"([^"]+)"', buyer)[0]
+                    sheet = workbook[clean_buyer] if clean_buyer in workbook.sheetnames else workbook.create_sheet(
+                        clean_buyer)
+
+                    # Define column names in the sheet
+                    column_names = ['Поставщик', 'услуг', 'Итого', 'date']
+
+                    # If the sheet is newly created, append the column names
+                    if sheet.max_row == 1:
+                        sheet.append(column_names)
+
+                    sheet.append([commission_agent, text_service, total, date])
                     file.close()
                     os.remove(file_path)
 
@@ -102,23 +108,31 @@ for filename in os.listdir(directory):
                 print(e)
                 traceback.print_exc()
 
-for column in sheet.columns:
-    max_length = 0
-    column_letter = column[0].column_letter
-    for cell in column:
-        try:
-            if len(str(cell.value)) > max_length:
-                max_length = len(cell.value)
-        except:
-            pass
-    adjusted_width = (max_length + 2) * 1.2
-    sheet.column_dimensions[column_letter].width = adjusted_width
 
-data_range = sheet[2:sheet.max_row]
-sorted_rows = sorted(data_range, key=lambda x: x[0].value)
-sheet.delete_rows(2, sheet.max_row)
+sheet = workbook["Sheet"]
 
-for row in sorted_rows:
-    sheet.append([cell.value for cell in row])
+workbook.remove(sheet)
+
+for sheet_name in workbook.sheetnames:
+    sheet = workbook[sheet_name]
+    for column in sheet.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = max_length * 1.2
+        sheet.column_dimensions[column_letter].width = adjusted_width
+
+    # data_range = sheet[2:sheet.max_row]
+    # sorted_rows = sorted(data_range, key=lambda x: x[0].value)
+    # sheet.delete_rows(2, sheet.max_row)
+
+    # for row in sorted_rows:
+    #     sheet.append([cell.value for cell in row])
+
 
 workbook.save('C:/Users/acer/OneDrive/Desktop/Dusel-Projects/file.xlsx')
