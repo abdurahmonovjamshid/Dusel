@@ -1,23 +1,22 @@
-from openpyxl import load_workbook
+import pandas as pd
 
-# Load the workbook
-workbook = load_workbook('file.xlsx')
+# Read the Excel file and parse the date column
+xls = pd.ExcelFile('file.xlsx')
+date_format = "%d.%m.%Y"  # Specify the date format
+parse_dates = ['date']  # Replace 'date' with the actual column name
 
-# Select the desired sheet
-sheet = workbook.active
-
-# Get the range of cells containing data
-data_range = sheet[1:sheet.max_row]
-
-# Sort the rows based on column A values
-sorted_rows = sorted(data_range, key=lambda x: x[0].value)
-
-# Clear the existing content in the sheet
-sheet.delete_rows(1, sheet.max_row)
-
-# Write the sorted rows back to the sheet
-for row in sorted_rows:
-    sheet.append([cell.value for cell in row])
-
-# Save the workbook with sorted data
-workbook.save('sorted_file.xlsx')
+# Create a new ExcelWriter object
+with pd.ExcelWriter('sorted_file_new.xlsx', mode='w', engine='openpyxl') as writer:
+    # Sort and save each sheet separately
+    for sheet_name in xls.sheet_names:
+        # Read the sheet and parse the date column
+        df = pd.read_excel(xls, sheet_name, parse_dates=parse_dates, date_format=date_format)
+        
+        # Sort the data by the date column
+        df_sorted = df.sort_values('date')
+        
+        # Format the date column without time component
+        df_sorted['date'] = df_sorted['date'].dt.strftime(date_format)
+        
+        # Save the sorted data to a new sheet in the same Excel file
+        df_sorted.to_excel(writer, sheet_name=sheet_name, index=False)
